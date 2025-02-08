@@ -4,7 +4,6 @@ def load_knowledge_base(caminho):
     base_de_conhecimento = {}
     with open(caminho, 'r', encoding='utf-8') as arquivo:
         conteudo = arquivo.read()
-        # Dividir cada entrada por linhas vazias
         entradas = re.split(r'\n\s*\n', conteudo)
         for entrada in entradas:
             linhas = entrada.strip().split('\n')
