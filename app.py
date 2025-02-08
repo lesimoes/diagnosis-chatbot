@@ -4,18 +4,26 @@ import streamlit as st
 from transformers import pipeline
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+from knowledge_base import load_knowledge_base, format_knowledge_base
 
-# Chat parameters
-first_ia_message = "Hello, there! How can I help you today?"
-system_message = "You are a friendly AI conversing with a human user."
-text_placeholder = "Enter your text here."
-text_waiting_ai_response = "Thinking..."
-max_response_length = 256
-reset_button_label = "Reset Chat History"
+# Load database
+knowledge = load_knowledge_base("database.txt")
+knowledge_context = format_knowledge_base(knowledge)
 
 # Models and Pipeline
 model_id="mistralai/Mistral-7B-Instruct-v0.3"
 translation_model_id = "Helsinki-NLP/opus-mt-tc-big-en-pt"
+
+# Chat parameters
+first_ia_message = "Olá, quais são os seus sintomas?"
+system_message = "You are a doctor who will help, based on the symptoms, and will give a diagnosis in Brazilian Portuguese. Your answer should be direct, simple and short, you can even ask a question to provide a more accurate answer. You should ask only about health. You should answer only questions about health."
+text_placeholder = "Enter your text here."
+text_waiting_ai_response = "Pensando..."
+max_response_length = 256
+reset_button_label = "Reset Chat History"
+chatbot_title = "ChatBot Sintomas"
+chatbot_description = f"* Um chatbot de sintomas que usa os modelos {model_id} e {translation_model_id}.*"
+temperature = 0.1
 
 translation_pipeline = pipeline(
     "translation_en_to_pt",
@@ -23,7 +31,7 @@ translation_pipeline = pipeline(
     token=os.getenv("HF_TOKEN")
 )
 
-def get_llm_hf_inference(model_id=model_id, max_new_tokens=128, temperature=0.1):
+def get_llm_hf_inference(model_id=model_id, max_new_tokens=128, temperature=temperature):
     llm = HuggingFaceEndpoint(
         repo_id=model_id,
         max_new_tokens=max_new_tokens,
@@ -38,9 +46,9 @@ def translate_to_portuguese(text):
     return translation[0]['translation_text']
 
 # Configure the Streamlit app
-st.set_page_config(page_title="Personal ChatBot", page_icon="🤗")
-st.title("Personal ChatBot")
-st.markdown(f"* A simple chatbot with {model_id} and {translation_model_id}.*")
+st.set_page_config(page_title=chatbot_title, page_icon="🤗")
+st.title(chatbot_title)
+st.markdown(chatbot_description)
 
 # Initialize session state for avatars
 if "avatars" not in st.session_state:
@@ -77,24 +85,31 @@ if "chat_history" not in st.session_state or reset_history:
     st.session_state.chat_history = [{"role": "assistant", "content": st.session_state.starter_message}]
 
 def get_response(system_message, chat_history, user_text, 
-                 eos_token_id=['User'], max_new_tokens=256, get_llm_hf_kws={}):
+                 eos_token_id=['User'], max_new_tokens=max_response_length, get_llm_hf_kws={}):
     # Set up model with token and temperature
-    hf = get_llm_hf_inference(max_new_tokens=max_new_tokens, temperature=0.1)
+    hf = get_llm_hf_inference(max_new_tokens=max_new_tokens, temperature=temperature)
 
+   
     # Create the prompt template
     prompt = PromptTemplate.from_template(
         (
             "[INST] {system_message}"
+            "{knowledge_context}\n"
             "\nCurrent Conversation:\n{chat_history}\n\n"
             "\nUser: {user_text}.\n [/INST]"
             "\nAI:"
         )
     )
 
-    # Response template
+    # Include knowledge database
     chat = prompt | hf.bind(skip_prompt=True) | StrOutputParser(output_key='content')
 
-    response = chat.invoke(input=dict(system_message=system_message, user_text=user_text, chat_history=chat_history))
+    response = chat.invoke(input={
+        "system_message": system_message,
+        "knowledge_context": knowledge_context,
+        "user_text": user_text,
+        "chat_history": chat_history
+    })
     response = response.split("AI:")[-1]
     response = translate_to_portuguese(response)
     chat_history.append({'role': 'user', 'content': user_text})
