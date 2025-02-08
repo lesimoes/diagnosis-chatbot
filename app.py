@@ -5,6 +5,7 @@ from transformers import pipeline
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from knowledge_base import load_knowledge_base, format_knowledge_base
+from huggingface_hub import login
 
 login(token=os.getenv("HF_TOKEN"))
 
