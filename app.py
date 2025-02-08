@@ -22,7 +22,7 @@ text_waiting_ai_response = "Pensando..."
 max_response_length = 256
 reset_button_label = "Reset Chat History"
 chatbot_title = "ChatBot Sintomas"
-chatbot_description = f"* Um chatbot de sintomas que usa os modelos {model_id} e {translation_model_id}.*"
+chatbot_description = f"* Um chatbot de sintomas que usa os modelos {model_id} e {translation_model_id}.* Lembre-se de não confiar nesse chatbot, para casos reais um médico deverá ser consultado."
 temperature = 0.1
 
 translation_pipeline = pipeline(
