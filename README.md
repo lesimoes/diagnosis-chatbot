@@ -1,7 +1,7 @@
 ---
 title: Chatbot Mistral
 emoji: 😷
-colorFrom: white
+colorFrom: gray
 colorTo: indigo
 sdk: streamlit
 sdk_version: 1.42.0
